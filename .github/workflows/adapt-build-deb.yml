@@ -1,0 +1,49 @@
+name: Build Deb Package
+
+# yamllint disable-line rule:truthy
+on:
+  workflow_dispatch:
+  release:
+    types: ["published"]
+jobs:
+  build-deb-package:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout supervised-installer
+        uses: actions/checkout@v4
+        with:
+          repository: "home-assistant/supervised-installer"
+          ref: "main"
+          path: "./raw_source"
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Adapt
+        run: |
+          yarn adapt
+
+      - name: Move files
+        run: |
+          cp -r ./raw_source/* ./
+
+      - name: Build Debian Package in Docker
+        run: |
+          docker run --rm -v $(pwd):/tmp debian:bullseye-slim bash -c \
+          "cd /tmp \
+          && chmod 555 homeassistant-supervised/DEBIAN/p* \
+          && dpkg-deb --build --root-owner-group homeassistant-supervised"
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: homeassistant-supervised.deb

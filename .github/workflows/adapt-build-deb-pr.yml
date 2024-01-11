@@ -1,0 +1,44 @@
+name: Build Test Deb Package
+
+on:
+  pull_request:
+    branches:
+      - main
+jobs:
+  build-test-deb-package:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout supervised-installer
+        uses: actions/checkout@v4
+        with:
+          repository: "home-assistant/supervised-installer"
+          ref: "main"
+          path: "./raw_source"
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Adapt
+        run: |
+          yarn adapt
+
+      - name: Build Debian Package in Docker
+        run: |
+          docker run --rm -v $(pwd):/tmp debian:bullseye-slim bash -c \
+          "cd /tmp \
+          && chmod 555 homeassistant-supervised/DEBIAN/p* \
+          && dpkg-deb --build --root-owner-group homeassistant-supervised"
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: homeassistant-supervised.deb
+          path: homeassistant-supervised.deb

@@ -1,0 +1,12 @@
+{
+  "name": "hass-supervised-installer-cn",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "repository": "git@github.com:HerbertHe/hass-supervised-installer-cn.git",
+  "author": "HerbertHe <Herbert.He0229@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "adapt": "node ./index.js"
+  }
+}
